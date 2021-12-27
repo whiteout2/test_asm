@@ -21,7 +21,7 @@ int main() {
 
     // standard inline assembly
     //asm ("movl $0, %eax\n\t" // 
-    //     "cpuid\n\t"            // 
+    //     "cpuid\n\t"         // 
     //     "");
 
     // Results:
