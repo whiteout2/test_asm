@@ -1,0 +1,185 @@
+#include <iostream>
+#include <sstream>
+#include <cstdlib>
+//#include <format>
+
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <conio.h>
+
+// declarations
+std::string hex2ascii(std::string& strhex);
+std::string my_itoa(int i);
+
+
+using namespace std;
+
+int main() {
+    //std::cout << "Hello, Assembly!";
+    std::cout << "Go1\n" << std::flush;
+
+
+    // standard inline assembly
+    //asm ("movl $0, %eax\n\t" // 
+    //     "cpuid\n\t"            // 
+    //     "");
+
+    // Results:
+    // eax: 20         0x14       Maximum Input Value for Basic CPUID Information.
+    // ebx: 1970169159 0x756e6547 "uneG" 
+    // ecx: 1818588270 0x6c65746e "letn"
+    // edx: 1231384169 0x49656e69 "Ieni"
+    // ebx,edx,ecx => "GenuineIntel"
+
+    // int a=0, b;
+    // asm ("movl %0, %%eax\n\t"
+    //      "cpuid\n\t"
+    //      "movl %%ebx, %1\n\t"
+    //      :"=r"(b)        /* output */
+    //      :"r"(a)         /* input */
+    //      :"%eax", "%ebx"         /* clobbered register */
+    //      );
+
+    // extended inline assembly
+    // HELL: Why can't we get a proper ecx out???
+    // OKOK: it happens when we indicate ecx as a clobbered register
+    // Still flakey.
+    // DONE: We flipped %0 and %1
+
+    // Get ebx
+    int a=0, b;
+    asm ("movl %1, %%eax\n\t"
+         "cpuid\n\t"
+         "movl %%ebx, %0\n\t"
+         :"=r"(b)        /* output */ // %0
+         :"r"(a)         /* input */  // %1
+         :"%eax"         /* clobbered register */
+         );
+
+    std::string strbhex = my_itoa(b);
+    std::cout << "ebx: " << strbhex << "\t" << hex2ascii(strbhex) << "\n";
+
+    // HELL: we only get the correct ecx when when we comment out the code
+    // above to get ebx
+    // WHY??? Side effects??
+    // NONO: we flipped %0 and %1
+
+    // Get ecx
+    int a2=0, c;
+    asm ("movl %1, %%eax\n\t"  // NOTE: %1 refers to "r"
+         "cpuid\n\t"
+         "movl %%ecx, %0\n\t"  // NOTE: %0 refers to "=r"
+         :"=r"(c)        /* output */
+         :"r"(a2)        /* input */
+         :"%eax"         /* clobbered register */
+         );
+    
+    std::string strchex = my_itoa(c);
+    std::cout << "ecx: " << strchex << "\t" << hex2ascii(strchex) << "\n";
+
+    // Get edx
+    int a3=0, d;
+    asm ("movl %1, %%eax\n\t"
+         "cpuid\n\t"
+         "movl %%edx, %0\n\t"
+         :"=r"(d)        /* output */
+         :"r"(a3)        /* input */
+         :"%eax"         /* clobbered register */
+         );
+
+    std::string strdhex = my_itoa(d);
+    std::cout << "edx: " << strdhex << "\t" << hex2ascii(strdhex) << "\n";
+
+    
+
+    // standard inline assembly
+    asm ("movl $0, %eax\n\t" // 
+         "cpuid\n\t"         // 
+         "");    
+
+    // TEST: only after the inline assembly our registers will still be intact
+    // after cpuid. Looking good at breakpoint here.
+    int dummy = 0;
+
+    //std::string strahex = my_itoa(a);
+    
+   
+
+    std::cout << std::flush;
+
+    //std::cout << "rbx: " << std::hex << b << "\n" << std::flush;
+
+    std::cout << "Go2\n";     
+}
+
+
+// turn hex string into ascii characters
+std::string hex2ascii(std::string& strhex)
+{
+    int len = strhex.length();
+    std::string newString;
+    for(int i=0; i<len; i+=2)
+    {
+        std::string byte = strhex.substr(i,2);
+        char chr = (char)(int)strtol(byte.c_str(), NULL, 16);
+        newString.push_back(chr);
+    }
+    return newString;
+}
+
+// turn int into a hex string
+std::string my_itoa(int i) 
+{
+    // Alas, itoa() is non-standard
+    //char hex_str[33];
+    //std::itoa(b,hex_str,16); 
+    //printf("hexadecimal: %s\n",hex_str);
+    
+    // use C++ stream crap
+    std::stringstream sstream;
+    sstream << std::hex << i;
+    std::string strhex = sstream.str();
+
+    // use new C++ fmt
+    // Alas, only in C++20
+    //std::string strbhex = std::format("{:x}", b);
+
+    return strhex;
+}
+
+
+
+/*
+// See: https://stackoverflow.com/questions/3790613/how-to-convert-a-string-of-hex-values-to-a-string
+
+// C++98 guarantees that '0', '1', ... '9' are consecutive.
+// It only guarantees that 'a' ... 'f' and 'A' ... 'F' are
+// in increasing order, but the only two alternative encodings
+// of the basic source character set that are still used by
+// anyone today (ASCII and EBCDIC) make them consecutive.
+unsigned char hexval(unsigned char c)
+{
+    if ('0' <= c && c <= '9')
+        return c - '0';
+    else if ('a' <= c && c <= 'f')
+        return c - 'a' + 10;
+    else if ('A' <= c && c <= 'F')
+        return c - 'A' + 10;
+    else abort();
+}
+
+void hex2ascii(const string& in, string& out)
+{
+    out.clear();
+    out.reserve(in.length() / 2);
+    for (string::const_iterator p = in.begin(); p != in.end(); p++)
+    {
+       unsigned char c = hexval(*p);
+       p++;
+       if (p == in.end()) break; // incomplete last digit - should report error
+       c = (c << 4) + hexval(*p); // + takes precedence over <<
+       out.push_back(c);
+    }
+}
+*/
+
