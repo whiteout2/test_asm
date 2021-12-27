@@ -53,6 +53,15 @@ int main() {
     // Get ebx ecx adx all in one go
     // NOTE: when using "=r" we get wrong output ("uneG" for all)
     // Use "=m" or "=rm"
+    // See: https://lists.llvm.org/pipermail/llvm-dev/2018-November/127968.html
+    // GCC-style inline assembly is notoriously hard to write correctly, because it is
+    // the user's responsibility to tell the compiler about the requirements of the
+    // assembly (inputs, output, modified registers, memory access), and getting this
+    // wrong results in silently generating incorrect code. This is also dependent on
+    // register allocation and scheduling decisions made by the compiler, so an inline
+    // assembly statement may appear to work correctly, then silently break when
+    // another change to the code or compiler upgrade causes those decisions to
+    // change.
     int ai=0, a, b, c, d;
     asm ("movl %4, %%eax\n\t"
          "cpuid\n\t"
