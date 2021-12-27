@@ -50,9 +50,9 @@ int main() {
     // Still flakey.
     // NONO: We flipped %0 and %1
 
-    // Get ebx ecx adx all in one go
+    // Get ebx ecx edx all in one go
     // NOTE: when using "=r" we get wrong output ("uneG" for all)
-    // Use "=m" or "=rm"
+    // Why? Use "=m" or "=rm"
     // See: https://lists.llvm.org/pipermail/llvm-dev/2018-November/127968.html
     // GCC-style inline assembly is notoriously hard to write correctly, because it is
     // the user's responsibility to tell the compiler about the requirements of the
